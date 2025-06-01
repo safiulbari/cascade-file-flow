@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Download, FileText, CheckCircle, AlertCircle, Clock, Loader2 } from 'lucide-react';
+import { Download, FileText, CheckCircle, AlertCircle, Clock, Loader2, Folder } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import io from 'socket.io-client';
 
@@ -30,6 +30,7 @@ interface DownloadSummary {
 
 const Index = () => {
   const [url, setUrl] = useState('');
+  const [folderName, setFolderName] = useState('');
   const [recursive, setRecursive] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloads, setDownloads] = useState<DownloadStatus[]>([]);
@@ -111,6 +112,15 @@ const Index = () => {
       return;
     }
 
+    if (!folderName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a folder name",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsDownloading(true);
     setDownloads([]);
     setSummary(null);
@@ -121,7 +131,7 @@ const Index = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url, recursive }),
+        body: JSON.stringify({ url, recursive, folderName }),
       });
 
       if (!response.ok) {
@@ -130,7 +140,7 @@ const Index = () => {
 
       toast({
         title: "Download Started",
-        description: "Crawling directory and starting downloads...",
+        description: `Crawling directory and starting downloads to "${folderName}" folder...`,
       });
     } catch (error) {
       setIsDownloading(false);
@@ -182,7 +192,7 @@ const Index = () => {
             <h1 className="text-4xl font-bold text-white">File Downloader & Crawler</h1>
           </div>
           <p className="text-lg text-slate-300 max-w-2xl mx-auto">
-            Paste an HTTP directory URL to crawl and download all files while preserving folder structure
+            Paste an HTTP directory URL to crawl and download all video files and images while preserving folder structure
           </p>
         </div>
 
@@ -205,6 +215,21 @@ const Index = () => {
                 disabled={isDownloading}
               />
             </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-300">Folder Name</label>
+              <div className="flex items-center space-x-2">
+                <Folder className="h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="My Downloads"
+                  value={folderName}
+                  onChange={(e) => setFolderName(e.target.value)}
+                  className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+                  disabled={isDownloading}
+                />
+              </div>
+              <p className="text-xs text-slate-400">Files will be saved to: downloads/{folderName}</p>
+            </div>
             
             <div className="flex items-center space-x-3">
               <Switch
@@ -217,7 +242,7 @@ const Index = () => {
 
             <Button 
               onClick={handleDownload}
-              disabled={isDownloading || !url.trim()}
+              disabled={isDownloading || !url.trim() || !folderName.trim()}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               size="lg"
             >
