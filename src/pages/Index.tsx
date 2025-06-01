@@ -161,7 +161,7 @@ const Index = () => {
     const variants = {
       queued: 'secondary',
       downloading: 'default',
-      completed: 'success',
+      completed: 'default', // Changed from 'success' to 'default'
       failed: 'destructive'
     } as const;
 
