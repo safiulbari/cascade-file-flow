@@ -13,8 +13,6 @@ interface DownloadFormProps {
   setFolderName: (name: string) => void;
   recursive: boolean;
   setRecursive: (recursive: boolean) => void;
-  createSubfolders: boolean;
-  setCreateSubfolders: (createSubfolders: boolean) => void;
   isDownloading: boolean;
   onDownload: () => void;
 }
@@ -26,8 +24,6 @@ const DownloadForm: React.FC<DownloadFormProps> = ({
   setFolderName,
   recursive,
   setRecursive,
-  createSubfolders,
-  setCreateSubfolders,
   isDownloading,
   onDownload
 }) => {
@@ -45,7 +41,7 @@ const DownloadForm: React.FC<DownloadFormProps> = ({
       <CardContent className="p-8 space-y-6">
         <div className="grid grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-gray-800">URL</label>
+            <label className="text-sm font-semibold text-gray-800">Directory URL</label>
             <div className="flex gap-2">
               <Input
                 placeholder="http://example.com/folder/"
@@ -79,26 +75,13 @@ const DownloadForm: React.FC<DownloadFormProps> = ({
           </div>
         </div>
         
-        <div className="space-y-4">
-          <div className="flex items-center space-x-3">
-            <Switch
-              checked={recursive}
-              onCheckedChange={setRecursive}
-              disabled={isDownloading}
-            />
-            <label className="text-sm font-medium text-gray-700">Recursive download (include subdirectories)</label>
-          </div>
-
-          {recursive && (
-            <div className="flex items-center space-x-3 ml-6">
-              <Switch
-                checked={createSubfolders}
-                onCheckedChange={setCreateSubfolders}
-                disabled={isDownloading}
-              />
-              <label className="text-sm font-medium text-gray-700">Create subdirectory folders</label>
-            </div>
-          )}
+        <div className="flex items-center space-x-3 pt-2">
+          <Switch
+            checked={recursive}
+            onCheckedChange={setRecursive}
+            disabled={isDownloading}
+          />
+          <label className="text-sm font-medium text-gray-700">Recursive download (include subdirectories)</label>
         </div>
 
         <Button 

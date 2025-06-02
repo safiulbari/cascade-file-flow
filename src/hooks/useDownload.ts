@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import io from 'socket.io-client';
@@ -116,13 +117,7 @@ export const useDownload = () => {
     return () => clearInterval(interval);
   }, [isDownloading]);
 
-  const startDownload = async (
-    url: string, 
-    folderName: string, 
-    recursive: boolean, 
-    createSubfolders: boolean = false,
-    selectedDirectories?: string[]
-  ) => {
+  const startDownload = async (url: string, folderName: string, recursive: boolean) => {
     if (!url.trim()) {
       toast({
         title: "Error",
@@ -151,26 +146,16 @@ export const useDownload = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          url, 
-          recursive, 
-          folderName, 
-          createSubfolders,
-          selectedDirectories 
-        }),
+        body: JSON.stringify({ url, recursive, folderName }),
       });
 
       if (!response.ok) {
         throw new Error('Failed to start download');
       }
 
-      const message = selectedDirectories && selectedDirectories.length > 0
-        ? `Starting selective download to "${folderName}" folder...`
-        : `Starting download to "${folderName}" folder...`;
-
       toast({
         title: "Download Started",
-        description: message,
+        description: `Starting download to "${folderName}" folder...`,
       });
     } catch (error) {
       setIsDownloading(false);
