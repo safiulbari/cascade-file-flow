@@ -3,18 +3,33 @@ import React, { useState } from 'react';
 import DownloadForm from '@/components/DownloadForm';
 import DownloadProgress from '@/components/DownloadProgress';
 import DownloadStats from '@/components/DownloadStats';
+import DirectorySelector from '@/components/DirectorySelector';
 import { useDownload } from '@/hooks/useDownload';
+import { useDirectoryStructure } from '@/hooks/useDirectoryStructure';
 
 const Index = () => {
   const [url, setUrl] = useState('');
   const [folderName, setFolderName] = useState('');
   const [recursive, setRecursive] = useState(true);
   const [createSubfolders, setCreateSubfolders] = useState(false);
+  const [showDirectorySelector, setShowDirectorySelector] = useState(false);
   
   const { isDownloading, downloads, summary, startDownload } = useDownload();
+  const { directoryStructure, fetchDirectoryStructure } = useDirectoryStructure();
 
-  const handleDownload = () => {
-    startDownload(url, folderName, recursive, createSubfolders);
+  const handleDownload = async () => {
+    if (recursive) {
+      // Fetch directory structure and show selector
+      await fetchDirectoryStructure(url);
+      setShowDirectorySelector(true);
+    } else {
+      // Direct download without directory selection
+      startDownload(url, folderName, recursive, createSubfolders);
+    }
+  };
+
+  const handleDirectorySelection = (selectedPaths: string[]) => {
+    startDownload(url, folderName, recursive, createSubfolders, selectedPaths);
   };
 
   return (
@@ -32,6 +47,14 @@ const Index = () => {
           setCreateSubfolders={setCreateSubfolders}
           isDownloading={isDownloading}
           onDownload={handleDownload}
+        />
+
+        {/* Directory Selector Popup */}
+        <DirectorySelector
+          isOpen={showDirectorySelector}
+          onClose={() => setShowDirectorySelector(false)}
+          onConfirm={handleDirectorySelection}
+          directoryStructure={directoryStructure}
         />
 
         {/* Progress and Stats */}
