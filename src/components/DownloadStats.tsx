@@ -1,7 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 
 interface DownloadStatus {
   id: string;
@@ -26,7 +25,6 @@ interface DownloadStatsProps {
 }
 
 const DownloadStats: React.FC<DownloadStatsProps> = ({ downloads, summary }) => {
-  const [speedData, setSpeedData] = useState<Array<{ time: string; speed: number }>>([]);
   const [currentSpeed, setCurrentSpeed] = useState(0);
   const [totalDownloaded, setTotalDownloaded] = useState('0 MB');
 
@@ -36,14 +34,6 @@ const DownloadStats: React.FC<DownloadStatsProps> = ({ downloads, summary }) => 
       if (activeDownloads.length > 0) {
         const speed = Math.random() * 15 + 2; // 2-17 MB/s
         setCurrentSpeed(speed);
-        
-        const now = new Date();
-        const timeStr = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
-        
-        setSpeedData(prev => {
-          const newData = [...prev, { time: timeStr, speed }].slice(-20); // Keep last 20 points
-          return newData;
-        });
 
         // Calculate total downloaded
         const completed = downloads.filter(d => d.status === 'completed').length;
@@ -62,96 +52,65 @@ const DownloadStats: React.FC<DownloadStatsProps> = ({ downloads, summary }) => 
 
   return (
     <div className="space-y-6">
-      {/* Real-time Statistics */}
-      <Card className="bg-white border border-gray-200 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-gray-900">Live Statistics</CardTitle>
+      {/* Live Statistics */}
+      <Card className="bg-white border border-gray-200 shadow-lg">
+        <CardHeader className="pb-4 border-b border-gray-100">
+          <CardTitle className="text-gray-900">Download Statistics</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{downloads.length}</div>
-              <div className="text-sm text-gray-600">Total Files</div>
+        <CardContent className="p-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-100">
+              <div className="text-2xl font-bold text-blue-600 mb-1">{downloads.length}</div>
+              <div className="text-sm text-blue-700 font-medium">Total Files</div>
             </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">{completedCount}</div>
-              <div className="text-sm text-gray-600">Completed</div>
+            <div className="text-center p-4 bg-purple-50 rounded-xl border border-purple-100">
+              <div className="text-2xl font-bold text-purple-600 mb-1">{completedCount}</div>
+              <div className="text-sm text-purple-700 font-medium">Completed</div>
             </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{downloadingCount}</div>
-              <div className="text-sm text-gray-600">Downloading</div>
+            <div className="text-center p-4 bg-green-50 rounded-xl border border-green-100">
+              <div className="text-2xl font-bold text-green-600 mb-1">{downloadingCount}</div>
+              <div className="text-sm text-green-700 font-medium">Downloading</div>
             </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-red-600">{failedCount}</div>
-              <div className="text-sm text-gray-600">Failed</div>
+            <div className="text-center p-4 bg-red-50 rounded-xl border border-red-100">
+              <div className="text-2xl font-bold text-red-600 mb-1">{failedCount}</div>
+              <div className="text-sm text-red-700 font-medium">Failed</div>
             </div>
           </div>
 
           {/* Real-time metrics */}
-          <div className="grid grid-cols-3 gap-4 mt-4">
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <div className="text-lg font-semibold text-blue-700">{currentSpeed.toFixed(1)} MB/s</div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+            <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl border border-blue-200">
+              <div className="text-lg font-bold text-blue-700">{currentSpeed.toFixed(1)} MB/s</div>
               <div className="text-sm text-blue-600">Current Speed</div>
             </div>
-            <div className="p-3 bg-green-50 rounded-lg">
-              <div className="text-lg font-semibold text-green-700">{totalDownloaded}</div>
+            <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-xl border border-green-200">
+              <div className="text-lg font-bold text-green-700">{totalDownloaded}</div>
               <div className="text-sm text-green-600">Downloaded</div>
             </div>
-            <div className="p-3 bg-purple-50 rounded-lg">
-              <div className="text-lg font-semibold text-purple-700">{queuedCount}</div>
+            <div className="p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl border border-purple-200">
+              <div className="text-lg font-bold text-purple-700">{queuedCount}</div>
               <div className="text-sm text-purple-600">In Queue</div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Real-time Speed Chart */}
-      {speedData.length > 0 && (
-        <Card className="bg-white border border-gray-200 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-gray-900">Download Speed</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={speedData}>
-                  <XAxis 
-                    dataKey="time" 
-                    tick={{ fontSize: 12 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis 
-                    tick={{ fontSize: 12 }}
-                    axisLine={false}
-                    tickLine={false}
-                    domain={[0, 20]}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="speed" 
-                    stroke="#10b981" 
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 4, fill: '#10b981' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Completion Summary */}
       {summary && (
-        <Card className="bg-white border border-gray-200 shadow-sm">
+        <Card className="bg-white border border-gray-200 shadow-lg">
           <CardContent className="p-6">
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-              <h3 className="text-green-700 font-semibold mb-2">Download Complete!</h3>
-              <div className="space-y-1 text-sm text-green-600">
-                <div>Files: {summary.completedFiles}/{summary.totalFiles}</div>
-                <div>Total Size: {summary.totalSize}</div>
-                <div>Duration: {summary.duration}</div>
+            <div className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
+              <h3 className="text-green-700 font-bold text-lg mb-3">Download Complete!</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-green-700">
+                <div className="font-medium">
+                  <span className="text-green-600">Files:</span> {summary.completedFiles}/{summary.totalFiles}
+                </div>
+                <div className="font-medium">
+                  <span className="text-green-600">Total Size:</span> {summary.totalSize}
+                </div>
+                <div className="font-medium">
+                  <span className="text-green-600">Duration:</span> {summary.duration}
+                </div>
               </div>
             </div>
           </CardContent>

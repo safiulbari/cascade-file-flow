@@ -1,8 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { CheckCircle, Download as DownloadIcon, Clock, Pause } from 'lucide-react';
+import { CheckCircle, Download as DownloadIcon, Clock, AlertCircle } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface DownloadStatus {
@@ -27,15 +26,15 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({ downloads }) => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="h-4 w-4 text-purple-500" />;
+        return <CheckCircle className="h-4 w-4 text-purple-600" />;
       case 'downloading':
-        return <DownloadIcon className="h-4 w-4 text-green-500" />;
+        return <DownloadIcon className="h-4 w-4 text-green-600" />;
       case 'queued':
-        return <Clock className="h-4 w-4 text-gray-400" />;
+        return <Clock className="h-4 w-4 text-gray-500" />;
       case 'failed':
-        return <Pause className="h-4 w-4 text-red-500" />;
+        return <AlertCircle className="h-4 w-4 text-red-500" />;
       default:
-        return <Clock className="h-4 w-4 text-gray-400" />;
+        return <Clock className="h-4 w-4 text-gray-500" />;
     }
   };
 
@@ -45,6 +44,8 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({ downloads }) => {
         return 'bg-purple-500';
       case 'downloading':
         return 'bg-green-500';
+      case 'failed':
+        return 'bg-red-500';
       default:
         return 'bg-gray-300';
     }
@@ -73,125 +74,113 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({ downloads }) => {
       
       return {
         speed: `${speed.toFixed(1)} MB/s`,
-        remainingTime: remaining > 0 ? `${Math.ceil(remaining / 60)} min` : 'Calculating...',
-        elapsedTime: `${Math.floor(elapsed / 60)}:${Math.floor(elapsed % 60).toString().padStart(2, '0')}`
+        remainingTime: remaining > 0 ? `${Math.ceil(remaining / 60)} min` : 'Calculating...'
       };
     }
-    return { speed: '0 MB/s', remainingTime: '--', elapsedTime: '--' };
+    return { speed: '--', remainingTime: '--' };
   };
 
   return (
-    <Card className="bg-white border border-gray-200 shadow-sm">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-gray-900 flex items-center space-x-2">
-          <DownloadIcon className="h-5 w-5 text-gray-600" />
-          <span>Downloads</span>
-        </CardTitle>
-
-        {activeDownload && (
-          <div className="mt-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">{activeDownload.filename}</h3>
-              <div className="text-sm text-gray-500">
+    <div className="space-y-6">
+      {/* Current Download Summary */}
+      {activeDownload && (
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 truncate max-w-md">
+                {activeDownload.filename}
+              </h3>
+              <div className="text-sm font-medium text-blue-600">
                 {getRealTimeData(activeDownload).speed}
               </div>
             </div>
             
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
               <div 
-                className="bg-green-500 h-2 rounded-full transition-all duration-300" 
+                className="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full transition-all duration-500 ease-out" 
                 style={{ width: `${activeDownload.progress || 0}%` }}
               />
             </div>
             
-            <div className="flex justify-between text-sm text-gray-500">
-              <span>{activeDownload.progress || 0}%</span>
+            <div className="flex justify-between text-sm text-gray-600">
+              <span className="font-medium">{activeDownload.progress || 0}%</span>
               <span>{getRealTimeData(activeDownload).remainingTime} remaining</span>
             </div>
+          </CardContent>
+        </Card>
+      )}
 
-            {/* Real-time Speed Graph */}
-            <div className="mt-4 h-32 bg-gray-50 rounded-lg flex items-end justify-center space-x-1 p-4 relative">
-              {Array.from({ length: 50 }, (_, i) => {
-                const height = Math.random() * 80 + 20;
-                const isRecent = i > 35;
+      {/* Downloads Table */}
+      <Card className="bg-white border border-gray-200 shadow-lg">
+        <CardHeader className="pb-4 border-b border-gray-100">
+          <CardTitle className="text-gray-900 flex items-center space-x-2">
+            <DownloadIcon className="h-5 w-5 text-gray-600" />
+            <span>Download Progress</span>
+            <span className="text-sm font-normal text-gray-500">({downloads.length} files)</span>
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-gray-200 bg-gray-50">
+                <TableHead className="text-gray-700 font-semibold w-[40%]">File Name</TableHead>
+                <TableHead className="text-gray-700 font-semibold w-[15%]">Progress</TableHead>
+                <TableHead className="text-gray-700 font-semibold w-[10%]">Size</TableHead>
+                <TableHead className="text-gray-700 font-semibold w-[15%] text-center">Speed</TableHead>
+                <TableHead className="text-gray-700 font-semibold w-[20%]">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {downloads.map((download) => {
+                const realTimeData = getRealTimeData(download);
                 return (
-                  <div
-                    key={i}
-                    className="w-1 rounded-t transition-all duration-200"
-                    style={{ 
-                      height: `${height}%`,
-                      backgroundColor: isRecent ? '#10b981' : '#d1d5db'
-                    }}
-                  />
+                  <TableRow key={download.id} className="border-gray-100 hover:bg-gray-50/50">
+                    <TableCell className="font-medium text-gray-900 w-[40%]">
+                      <div className="flex items-center space-x-3">
+                        {getStatusIcon(download.status)}
+                        <span className="truncate max-w-xs">{download.filename}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="w-[15%]">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-16 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(download.status)}`}
+                            style={{ width: `${download.status === 'completed' ? 100 : download.progress || 0}%` }}
+                          />
+                        </div>
+                        <span className="text-sm text-gray-600 min-w-[35px] text-right">
+                          {download.status === 'completed' ? '100%' : `${download.progress || 0}%`}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-gray-600 w-[10%]">
+                      <span className="text-sm">{download.size || '--'}</span>
+                    </TableCell>
+                    <TableCell className="text-gray-600 w-[15%] text-center">
+                      <span className="text-sm font-mono min-w-[80px] inline-block">
+                        {download.status === 'downloading' ? realTimeData.speed : '--'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="w-[20%]">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        download.status === 'completed' ? 'bg-purple-100 text-purple-700' :
+                        download.status === 'downloading' ? 'bg-green-100 text-green-700' :
+                        download.status === 'failed' ? 'bg-red-100 text-red-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {getStatusText(download.status)}
+                      </span>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </div>
-
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>0 MB/s</span>
-              <span>5 MB/s</span>
-              <span>10 MB/s</span>
-            </div>
-          </div>
-        )}
-      </CardHeader>
-
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow className="border-gray-200">
-              <TableHead className="text-gray-600 font-medium">File Name</TableHead>
-              <TableHead className="text-gray-600 font-medium">Progress</TableHead>
-              <TableHead className="text-gray-600 font-medium">Size</TableHead>
-              <TableHead className="text-gray-600 font-medium">Speed</TableHead>
-              <TableHead className="text-gray-600 font-medium">Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {downloads.map((download) => {
-              const realTimeData = getRealTimeData(download);
-              return (
-                <TableRow key={download.id} className="border-gray-100">
-                  <TableCell className="font-medium text-gray-900">
-                    <div className="flex items-center space-x-2">
-                      {getStatusIcon(download.status)}
-                      <span className="truncate max-w-xs">{download.filename}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-20 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(download.status)}`}
-                          style={{ width: `${download.progress || 0}%` }}
-                        />
-                      </div>
-                      <span className="text-sm text-gray-600 min-w-[40px]">
-                        {download.status === 'completed' ? '100%' : `${download.progress || 0}%`}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-gray-600">{download.size || 'Unknown'}</TableCell>
-                  <TableCell className="text-gray-600">
-                    {download.status === 'downloading' ? realTimeData.speed : '--'}
-                  </TableCell>
-                  <TableCell className="text-gray-600">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      download.status === 'completed' ? 'bg-purple-100 text-purple-700' :
-                      download.status === 'downloading' ? 'bg-green-100 text-green-700' :
-                      download.status === 'failed' ? 'bg-red-100 text-red-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
-                      {getStatusText(download.status)}
-                    </span>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

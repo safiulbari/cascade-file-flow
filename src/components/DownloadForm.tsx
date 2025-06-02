@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
-import { Download, Loader2 } from 'lucide-react';
+import { Download, Loader2, Clipboard } from 'lucide-react';
 
 interface DownloadFormProps {
   url: string;
@@ -27,32 +27,44 @@ const DownloadForm: React.FC<DownloadFormProps> = ({
   isDownloading,
   onDownload
 }) => {
-  return (
-    <Card className="bg-white border border-gray-200 shadow-sm">
-      <CardContent className="p-6 space-y-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Directory URL</label>
-          <Input
-            placeholder="http://example.com/folder/"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            className="bg-white border-gray-300 text-gray-900 placeholder-gray-400"
-            disabled={isDownloading}
-          />
-        </div>
+  const handlePaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      setUrl(text);
+    } catch (err) {
+      console.error('Failed to read clipboard contents: ', err);
+    }
+  };
 
-        <div className="grid grid-cols-2 gap-4">
+  return (
+    <Card className="bg-white border border-gray-200 shadow-lg">
+      <CardContent className="p-8 space-y-6">
+        <div className="grid grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Directory</label>
-            <Input
-              placeholder="Directory path"
-              value={url.split('/').slice(-2, -1)[0] || ''}
-              className="bg-gray-50 border-gray-300 text-gray-500"
-              disabled
-            />
+            <label className="text-sm font-semibold text-gray-800">Directory URL</label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="http://example.com/folder/"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                className="bg-white border-gray-300 text-gray-900 placeholder-gray-400 flex-1"
+                disabled={isDownloading}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={handlePaste}
+                disabled={isDownloading}
+                className="shrink-0"
+              >
+                <Clipboard className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
+          
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Folder Name</label>
+            <label className="text-sm font-semibold text-gray-800">Folder Name</label>
             <Input
               placeholder="My Downloads"
               value={folderName}
@@ -63,19 +75,19 @@ const DownloadForm: React.FC<DownloadFormProps> = ({
           </div>
         </div>
         
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3 pt-2">
           <Switch
             checked={recursive}
             onCheckedChange={setRecursive}
             disabled={isDownloading}
           />
-          <label className="text-sm text-gray-700">Recursive download (include subdirectories)</label>
+          <label className="text-sm font-medium text-gray-700">Recursive download (include subdirectories)</label>
         </div>
 
         <Button 
           onClick={onDownload}
           disabled={isDownloading || !url.trim() || !folderName.trim()}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-md"
           size="lg"
         >
           {isDownloading ? (
