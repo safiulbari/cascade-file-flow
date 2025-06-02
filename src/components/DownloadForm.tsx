@@ -3,8 +3,8 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Download, FileText, Loader2, Folder } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Download, Loader2 } from 'lucide-react';
 
 interface DownloadFormProps {
   url: string;
@@ -28,38 +28,39 @@ const DownloadForm: React.FC<DownloadFormProps> = ({
   onDownload
 }) => {
   return (
-    <Card className="bg-slate-800 border-slate-700">
-      <CardHeader>
-        <CardTitle className="text-white flex items-center space-x-2">
-          <FileText className="h-5 w-5" />
-          <span>Download Configuration</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <Card className="bg-white border border-gray-200 shadow-sm">
+      <CardContent className="p-6 space-y-4">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-300">Directory URL</label>
+          <label className="text-sm font-medium text-gray-700">Directory URL</label>
           <Input
             placeholder="http://example.com/folder/"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+            className="bg-white border-gray-300 text-gray-900 placeholder-gray-400"
             disabled={isDownloading}
           />
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-300">Folder Name</label>
-          <div className="flex items-center space-x-2">
-            <Folder className="h-4 w-4 text-slate-400" />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Directory</label>
+            <Input
+              placeholder="Directory path"
+              value={url.split('/').slice(-2, -1)[0] || ''}
+              className="bg-gray-50 border-gray-300 text-gray-500"
+              disabled
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Folder Name</label>
             <Input
               placeholder="My Downloads"
               value={folderName}
               onChange={(e) => setFolderName(e.target.value)}
-              className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+              className="bg-white border-gray-300 text-gray-900 placeholder-gray-400"
               disabled={isDownloading}
             />
           </div>
-          <p className="text-xs text-slate-400">Files will be saved to: downloads/{folderName}</p>
         </div>
         
         <div className="flex items-center space-x-3">
@@ -68,7 +69,7 @@ const DownloadForm: React.FC<DownloadFormProps> = ({
             onCheckedChange={setRecursive}
             disabled={isDownloading}
           />
-          <label className="text-sm text-slate-300">Recursive download (include subdirectories)</label>
+          <label className="text-sm text-gray-700">Recursive download (include subdirectories)</label>
         </div>
 
         <Button 

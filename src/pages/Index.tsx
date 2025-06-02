@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import AppHeader from '@/components/AppHeader';
 import DownloadForm from '@/components/DownloadForm';
 import DownloadProgress from '@/components/DownloadProgress';
 import DownloadStats from '@/components/DownloadStats';
@@ -18,10 +17,8 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
-        <AppHeader />
-
         <DownloadForm
           url={url}
           setUrl={setUrl}
@@ -34,7 +31,7 @@ const Index = () => {
         />
 
         {downloads.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             <DownloadProgress downloads={downloads} />
             <DownloadStats downloads={downloads} summary={summary} />
           </div>
