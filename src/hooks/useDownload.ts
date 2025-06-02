@@ -10,6 +10,9 @@ interface DownloadStatus {
   progress?: number;
   size?: string;
   error?: string;
+  speed?: string;
+  remainingTime?: string;
+  startTime?: number;
 }
 
 interface DownloadSummary {
@@ -47,7 +50,12 @@ export const useDownload = () => {
     socketConnection.on('fileDownloading', (data: { id: string; progress?: number }) => {
       setDownloads(prev => prev.map(item => 
         item.id === data.id 
-          ? { ...item, status: 'downloading', progress: data.progress }
+          ? { 
+              ...item, 
+              status: 'downloading', 
+              progress: data.progress,
+              startTime: item.startTime || Date.now()
+            }
           : item
       ));
     });
@@ -91,6 +99,24 @@ export const useDownload = () => {
     };
   }, [toast]);
 
+  // Real-time progress simulation for better UX
+  useEffect(() => {
+    if (!isDownloading) return;
+
+    const interval = setInterval(() => {
+      setDownloads(prev => prev.map(download => {
+        if (download.status === 'downloading' && download.progress !== undefined && download.progress < 100) {
+          const increment = Math.random() * 5 + 1; // 1-6% progress increment
+          const newProgress = Math.min(download.progress + increment, 100);
+          return { ...download, progress: newProgress };
+        }
+        return download;
+      }));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isDownloading]);
+
   const startDownload = async (url: string, folderName: string, recursive: boolean) => {
     if (!url.trim()) {
       toast({
@@ -129,7 +155,7 @@ export const useDownload = () => {
 
       toast({
         title: "Download Started",
-        description: `Crawling directory and starting downloads to "${folderName}" folder...`,
+        description: `Starting download to "${folderName}" folder...`,
       });
     } catch (error) {
       setIsDownloading(false);

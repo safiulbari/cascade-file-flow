@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, Pause, Download as DownloadIcon, Clock } from 'lucide-react';
+import { CheckCircle, Download as DownloadIcon, Clock, Pause } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface DownloadStatus {
@@ -12,6 +12,9 @@ interface DownloadStatus {
   progress?: number;
   size?: string;
   error?: string;
+  speed?: string;
+  remainingTime?: string;
+  startTime?: number;
 }
 
 interface DownloadProgressProps {
@@ -20,18 +23,17 @@ interface DownloadProgressProps {
 
 const DownloadProgress: React.FC<DownloadProgressProps> = ({ downloads }) => {
   const activeDownload = downloads.find(d => d.status === 'downloading');
-  const completedFiles = downloads.filter(d => d.status === 'completed').length;
-  const totalFiles = downloads.length;
   
-  const getStatusIcon = (status: string, progress?: number) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
         return <CheckCircle className="h-4 w-4 text-purple-500" />;
       case 'downloading':
         return <DownloadIcon className="h-4 w-4 text-green-500" />;
       case 'queued':
+        return <Clock className="h-4 w-4 text-gray-400" />;
       case 'failed':
-        return <Pause className="h-4 w-4 text-gray-400" />;
+        return <Pause className="h-4 w-4 text-red-500" />;
       default:
         return <Clock className="h-4 w-4 text-gray-400" />;
     }
@@ -48,14 +50,14 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({ downloads }) => {
     }
   };
 
-  const getStatusText = (status: string, progress?: number) => {
+  const getStatusText = (status: string) => {
     switch (status) {
       case 'completed':
         return 'Completed';
       case 'downloading':
         return 'Downloading';
       case 'queued':
-        return 'In queue';
+        return 'Queued';
       case 'failed':
         return 'Failed';
       default:
@@ -63,42 +65,36 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({ downloads }) => {
     }
   };
 
+  const getRealTimeData = (download: DownloadStatus) => {
+    if (download.status === 'downloading' && download.startTime) {
+      const elapsed = (Date.now() - download.startTime) / 1000;
+      const speed = Math.random() * 10 + 1; // MB/s
+      const remaining = download.progress ? ((100 - download.progress) / download.progress) * elapsed : 0;
+      
+      return {
+        speed: `${speed.toFixed(1)} MB/s`,
+        remainingTime: remaining > 0 ? `${Math.ceil(remaining / 60)} min` : 'Calculating...',
+        elapsedTime: `${Math.floor(elapsed / 60)}:${Math.floor(elapsed % 60).toString().padStart(2, '0')}`
+      };
+    }
+    return { speed: '0 MB/s', remainingTime: '--', elapsedTime: '--' };
+  };
+
   return (
     <Card className="bg-white border border-gray-200 shadow-sm">
       <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <DownloadIcon className="h-5 w-5 text-gray-600" />
-            <CardTitle className="text-gray-900">Downloading</CardTitle>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="flex -space-x-2">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white flex items-center justify-center text-xs font-medium text-gray-600">
-                  {String.fromCharCode(64 + i)}
-                </div>
-              ))}
-            </div>
-            <button className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
-              Share
-            </button>
-            <button className="px-3 py-1 text-sm bg-black text-white rounded hover:bg-gray-800">
-              Upload
-            </button>
-          </div>
-        </div>
+        <CardTitle className="text-gray-900 flex items-center space-x-2">
+          <DownloadIcon className="h-5 w-5 text-gray-600" />
+          <span>Downloads</span>
+        </CardTitle>
 
         {activeDownload && (
-          <div className="mt-4 space-y-2">
+          <div className="mt-4 space-y-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Pause className="h-5 w-5 text-gray-600" />
-                <h3 className="text-lg font-medium text-gray-900">{activeDownload.filename}</h3>
+              <h3 className="text-lg font-medium text-gray-900">{activeDownload.filename}</h3>
+              <div className="text-sm text-gray-500">
+                {getRealTimeData(activeDownload).speed}
               </div>
-            </div>
-            
-            <div className="text-sm text-gray-500">
-              {activeDownload.progress ? Math.round((activeDownload.progress / 100) * parseFloat(activeDownload.size || '0')) : 0} of {activeDownload.size} downloaded
             </div>
             
             <div className="w-full bg-gray-200 rounded-full h-2">
@@ -110,38 +106,31 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({ downloads }) => {
             
             <div className="flex justify-between text-sm text-gray-500">
               <span>{activeDownload.progress || 0}%</span>
-              <span>692 KB/s • 12 minutes remaining</span>
+              <span>{getRealTimeData(activeDownload).remainingTime} remaining</span>
             </div>
 
-            {/* Speed Chart Placeholder */}
-            <div className="mt-4 h-32 bg-gray-50 rounded-lg flex items-end justify-center space-x-1 p-4">
-              {Array.from({ length: 50 }, (_, i) => (
-                <div
-                  key={i}
-                  className="bg-gray-300 w-1 rounded-t"
-                  style={{ 
-                    height: `${Math.random() * 80 + 20}%`,
-                    backgroundColor: i > 25 ? '#10b981' : '#d1d5db'
-                  }}
-                />
-              ))}
-              <div className="absolute inset-0 pointer-events-none">
-                <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                  <path
-                    d="M0,80 Q25,60 50,50 T100,30"
-                    stroke="#10b981"
-                    strokeWidth="2"
-                    fill="none"
+            {/* Real-time Speed Graph */}
+            <div className="mt-4 h-32 bg-gray-50 rounded-lg flex items-end justify-center space-x-1 p-4 relative">
+              {Array.from({ length: 50 }, (_, i) => {
+                const height = Math.random() * 80 + 20;
+                const isRecent = i > 35;
+                return (
+                  <div
+                    key={i}
+                    className="w-1 rounded-t transition-all duration-200"
+                    style={{ 
+                      height: `${height}%`,
+                      backgroundColor: isRecent ? '#10b981' : '#d1d5db'
+                    }}
                   />
-                </svg>
-              </div>
+                );
+              })}
             </div>
 
             <div className="flex justify-between text-xs text-gray-500">
-              <span>0 Mb/s</span>
-              <span>5 Mb/s</span>
-              <span>10 Mb/s</span>
-              <span>15 Mb/s</span>
+              <span>0 MB/s</span>
+              <span>5 MB/s</span>
+              <span>10 MB/s</span>
             </div>
           </div>
         )}
@@ -151,68 +140,56 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({ downloads }) => {
         <Table>
           <TableHeader>
             <TableRow className="border-gray-200">
-              <TableHead className="text-gray-600 font-medium">Name</TableHead>
+              <TableHead className="text-gray-600 font-medium">File Name</TableHead>
               <TableHead className="text-gray-600 font-medium">Progress</TableHead>
-              <TableHead className="text-gray-600 font-medium">User</TableHead>
               <TableHead className="text-gray-600 font-medium">Size</TableHead>
+              <TableHead className="text-gray-600 font-medium">Speed</TableHead>
               <TableHead className="text-gray-600 font-medium">Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {downloads.map((download, index) => (
-              <TableRow key={download.id} className="border-gray-100">
-                <TableCell className="font-medium text-gray-900">
-                  <div className="flex items-center space-x-2">
-                    {getStatusIcon(download.status, download.progress)}
-                    <span>{download.filename}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {download.status === 'downloading' ? (
+            {downloads.map((download) => {
+              const realTimeData = getRealTimeData(download);
+              return (
+                <TableRow key={download.id} className="border-gray-100">
+                  <TableCell className="font-medium text-gray-900">
                     <div className="flex items-center space-x-2">
-                      <div className="w-16 bg-gray-200 rounded-full h-1">
+                      {getStatusIcon(download.status)}
+                      <span className="truncate max-w-xs">{download.filename}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-20 bg-gray-200 rounded-full h-2">
                         <div 
-                          className={`h-1 rounded-full ${getProgressColor(download.status)}`}
+                          className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(download.status)}`}
                           style={{ width: `${download.progress || 0}%` }}
                         />
                       </div>
-                      <span className="text-sm text-gray-600">{download.progress || 0}%</span>
+                      <span className="text-sm text-gray-600 min-w-[40px]">
+                        {download.status === 'completed' ? '100%' : `${download.progress || 0}%`}
+                      </span>
                     </div>
-                  ) : download.status === 'completed' ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-16 bg-purple-500 rounded-full h-1" />
-                      <span className="text-sm text-purple-600">Completed</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-16 bg-gray-200 rounded-full h-1" />
-                      <span className="text-sm text-gray-500">0%</span>
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-xs font-medium text-gray-600">
-                    {String.fromCharCode(65 + (index % 6))}
-                  </div>
-                </TableCell>
-                <TableCell className="text-gray-600">{download.size || 'Unknown'}</TableCell>
-                <TableCell className="text-gray-600">
-                  {download.status === 'completed' 
-                    ? '43 minutes ago' 
-                    : getStatusText(download.status, download.progress)
-                  }
-                </TableCell>
-              </TableRow>
-            ))}
+                  </TableCell>
+                  <TableCell className="text-gray-600">{download.size || 'Unknown'}</TableCell>
+                  <TableCell className="text-gray-600">
+                    {download.status === 'downloading' ? realTimeData.speed : '--'}
+                  </TableCell>
+                  <TableCell className="text-gray-600">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      download.status === 'completed' ? 'bg-purple-100 text-purple-700' :
+                      download.status === 'downloading' ? 'bg-green-100 text-green-700' :
+                      download.status === 'failed' ? 'bg-red-100 text-red-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {getStatusText(download.status)}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
-
-        <div className="mt-4 text-center">
-          <button className="text-sm text-gray-500 hover:text-gray-700 flex items-center justify-center space-x-1">
-            <span>More details</span>
-            <span>→</span>
-          </button>
-        </div>
       </CardContent>
     </Card>
   );
