@@ -126,9 +126,9 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({ downloads }) => {
               <TableRow className="border-gray-200 bg-gray-50">
                 <TableHead className="text-gray-700 font-semibold w-[40%]">File Name</TableHead>
                 <TableHead className="text-gray-700 font-semibold w-[15%]">Progress</TableHead>
-                <TableHead className="text-gray-700 font-semibold w-[10%]">Size</TableHead>
+                <TableHead className="text-gray-700 font-semibold w-[12%]">Size</TableHead>
                 <TableHead className="text-gray-700 font-semibold w-[15%] text-center">Speed</TableHead>
-                <TableHead className="text-gray-700 font-semibold w-[20%]">Status</TableHead>
+                <TableHead className="text-gray-700 font-semibold w-[18%]">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -136,13 +136,13 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({ downloads }) => {
                 const realTimeData = getRealTimeData(download);
                 return (
                   <TableRow key={download.id} className="border-gray-100 hover:bg-gray-50/50">
-                    <TableCell className="font-medium text-gray-900 w-[40%]">
+                    <TableCell className="font-medium text-gray-900 w-[40%] p-4">
                       <div className="flex items-center space-x-3">
                         {getStatusIcon(download.status)}
                         <span className="truncate max-w-xs">{download.filename}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="w-[15%]">
+                    <TableCell className="w-[15%] p-4">
                       <div className="flex items-center space-x-2">
                         <div className="w-16 bg-gray-200 rounded-full h-2">
                           <div 
@@ -150,20 +150,20 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({ downloads }) => {
                             style={{ width: `${download.status === 'completed' ? 100 : download.progress || 0}%` }}
                           />
                         </div>
-                        <span className="text-sm text-gray-600 min-w-[35px] text-right">
+                        <span className="text-sm text-gray-600 w-9 text-right">
                           {download.status === 'completed' ? '100%' : `${download.progress || 0}%`}
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-gray-600 w-[10%]">
+                    <TableCell className="text-gray-600 w-[12%] p-4">
                       <span className="text-sm">{download.size || '--'}</span>
                     </TableCell>
-                    <TableCell className="text-gray-600 w-[15%] text-center">
-                      <span className="text-sm font-mono min-w-[80px] inline-block">
+                    <TableCell className="text-gray-600 w-[15%] text-center p-4">
+                      <span className="text-sm font-mono w-20 inline-block">
                         {download.status === 'downloading' ? realTimeData.speed : '--'}
                       </span>
                     </TableCell>
-                    <TableCell className="w-[20%]">
+                    <TableCell className="w-[18%] p-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                         download.status === 'completed' ? 'bg-purple-100 text-purple-700' :
                         download.status === 'downloading' ? 'bg-green-100 text-green-700' :

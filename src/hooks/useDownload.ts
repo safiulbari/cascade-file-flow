@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import io from 'socket.io-client';
@@ -117,7 +116,7 @@ export const useDownload = () => {
     return () => clearInterval(interval);
   }, [isDownloading]);
 
-  const startDownload = async (url: string, folderName: string, recursive: boolean) => {
+  const startDownload = async (url: string, folderName: string, recursive: boolean, createSubfolders: boolean = false) => {
     if (!url.trim()) {
       toast({
         title: "Error",
@@ -146,7 +145,7 @@ export const useDownload = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url, recursive, folderName }),
+        body: JSON.stringify({ url, recursive, folderName, createSubfolders }),
       });
 
       if (!response.ok) {
