@@ -41,17 +41,17 @@ const DownloadForm: React.FC<DownloadFormProps> = ({
   };
 
   return (
-    <Card className="bg-white border border-gray-200 shadow-lg">
-      <CardContent className="p-8 space-y-6">
+    <Card className="bg-white border border-gray-300 shadow-sm">
+      <CardContent className="p-6 space-y-6">
         <div className="grid grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-gray-800">URL</label>
+            <label className="text-sm font-medium text-gray-800">Directory URL</label>
             <div className="flex gap-2">
               <Input
                 placeholder="http://example.com/folder/"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                className="bg-white border-gray-300 text-gray-900 placeholder-gray-400 flex-1"
+                className="bg-white border-gray-300 text-gray-900 placeholder-gray-400 flex-1 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 disabled={isDownloading}
               />
               <Button
@@ -60,7 +60,7 @@ const DownloadForm: React.FC<DownloadFormProps> = ({
                 size="icon"
                 onClick={handlePaste}
                 disabled={isDownloading}
-                className="shrink-0"
+                className="shrink-0 border-gray-300 hover:bg-gray-50"
               >
                 <Clipboard className="h-4 w-4" />
               </Button>
@@ -68,35 +68,35 @@ const DownloadForm: React.FC<DownloadFormProps> = ({
           </div>
           
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-gray-800">Folder Name</label>
+            <label className="text-sm font-medium text-gray-800">Folder Name</label>
             <Input
               placeholder="My Downloads"
               value={folderName}
               onChange={(e) => setFolderName(e.target.value)}
-              className="bg-white border-gray-300 text-gray-900 placeholder-gray-400"
+              className="bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               disabled={isDownloading}
             />
           </div>
         </div>
         
         <div className="space-y-4">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <label className="text-sm font-medium text-gray-700">Recursive download (include subdirectories)</label>
             <Switch
               checked={recursive}
               onCheckedChange={setRecursive}
               disabled={isDownloading}
             />
-            <label className="text-sm font-medium text-gray-700">Recursive download (include subdirectories)</label>
           </div>
 
           {recursive && (
-            <div className="flex items-center space-x-3 ml-6">
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg ml-4">
+              <label className="text-sm font-medium text-gray-700">Create subdirectory folders</label>
               <Switch
                 checked={createSubfolders}
                 onCheckedChange={setCreateSubfolders}
                 disabled={isDownloading}
               />
-              <label className="text-sm font-medium text-gray-700">Create subdirectory folders</label>
             </div>
           )}
         </div>
@@ -104,7 +104,7 @@ const DownloadForm: React.FC<DownloadFormProps> = ({
         <Button 
           onClick={onDownload}
           disabled={isDownloading || !url.trim() || !folderName.trim()}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-md"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm h-11"
           size="lg"
         >
           {isDownloading ? (

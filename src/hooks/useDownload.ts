@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import io from 'socket.io-client';
 
 interface DownloadStatus {
   id: string;
   filename: string;
-  status: 'queued' | 'downloading' | 'completed' | 'failed';
+  status: 'queued' | 'downloading' | 'completed' | 'failed' | 'paused';
   progress?: number;
   size?: string;
   error?: string;
@@ -22,12 +22,38 @@ interface DownloadSummary {
   duration: string;
 }
 
+const STORAGE_KEY = 'download_manager_data';
+
 export const useDownload = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloads, setDownloads] = useState<DownloadStatus[]>([]);
   const [summary, setSummary] = useState<DownloadSummary | null>(null);
   const [socket, setSocket] = useState<any>(null);
   const { toast } = useToast();
+
+  // Load data from localStorage on mount
+  useEffect(() => {
+    const savedData = localStorage.getItem(STORAGE_KEY);
+    if (savedData) {
+      try {
+        const { downloads: savedDownloads, summary: savedSummary } = JSON.parse(savedData);
+        setDownloads(savedDownloads || []);
+        setSummary(savedSummary || null);
+      } catch (error) {
+        console.error('Failed to load saved data:', error);
+      }
+    }
+  }, []);
+
+  // Save data to localStorage whenever downloads or summary changes
+  useEffect(() => {
+    const dataToSave = {
+      downloads,
+      summary,
+      lastUpdated: Date.now()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+  }, [downloads, summary]);
 
   useEffect(() => {
     // Initialize Socket.IO connection
@@ -97,6 +123,40 @@ export const useDownload = () => {
       socketConnection.disconnect();
     };
   }, [toast]);
+
+  const pauseDownload = useCallback((id: string) => {
+    setDownloads(prev => prev.map(item => 
+      item.id === id && item.status === 'downloading'
+        ? { ...item, status: 'paused' }
+        : item
+    ));
+    
+    if (socket) {
+      socket.emit('pauseDownload', { id });
+    }
+    
+    toast({
+      title: "Download Paused",
+      description: "Download has been paused",
+    });
+  }, [socket, toast]);
+
+  const resumeDownload = useCallback((id: string) => {
+    setDownloads(prev => prev.map(item => 
+      item.id === id && item.status === 'paused'
+        ? { ...item, status: 'downloading' }
+        : item
+    ));
+    
+    if (socket) {
+      socket.emit('resumeDownload', { id });
+    }
+    
+    toast({
+      title: "Download Resumed",
+      description: "Download has been resumed",
+    });
+  }, [socket, toast]);
 
   // Real-time progress simulation for better UX
   useEffect(() => {
@@ -170,6 +230,8 @@ export const useDownload = () => {
     isDownloading,
     downloads,
     summary,
-    startDownload
+    startDownload,
+    pauseDownload,
+    resumeDownload
   };
 };
