@@ -1,23 +1,6 @@
-
 import React from 'react';
 import { Download, CheckCircle, Clock, AlertCircle } from 'lucide-react';
-
-interface DownloadStatus {
-  id: string;
-  filename: string;
-  status: 'queued' | 'downloading' | 'completed' | 'failed' | 'paused';
-  progress?: number;
-  size?: string;
-  error?: string;
-}
-
-interface DownloadSummary {
-  totalFiles: number;
-  completedFiles: number;
-  failedFiles: number;
-  totalSize: string;
-  duration: string;
-}
+import { DownloadStatus, DownloadSummary } from '@/types/download';
 
 interface MacOSSidebarProps {
   downloads: DownloadStatus[];
