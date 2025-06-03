@@ -1,10 +1,13 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DownloadForm from '@/components/DownloadForm';
 import DownloadProgress from '@/components/DownloadProgress';
-import DownloadStats from '@/components/DownloadStats';
 import MacOSSidebar from '@/components/MacOSSidebar';
+import { Button } from '@/components/ui/button';
+import { Trash2 } from 'lucide-react';
 import { useDownload } from '@/hooks/useDownload';
+
+const FORM_DATA_KEY = 'download_form_data';
 
 const Index = () => {
   const [url, setUrl] = useState('');
@@ -12,7 +15,35 @@ const Index = () => {
   const [recursive, setRecursive] = useState(true);
   const [createSubfolders, setCreateSubfolders] = useState(false);
   
-  const { isDownloading, downloads, summary, startDownload, pauseDownload, resumeDownload } = useDownload();
+  const { isDownloading, downloads, summary, startDownload, pauseDownload, resumeDownload, clearAllData } = useDownload();
+
+  // Load form data from localStorage on mount
+  useEffect(() => {
+    const savedFormData = localStorage.getItem(FORM_DATA_KEY);
+    if (savedFormData) {
+      try {
+        const { url: savedUrl, folderName: savedFolderName, recursive: savedRecursive, createSubfolders: savedCreateSubfolders } = JSON.parse(savedFormData);
+        setUrl(savedUrl || '');
+        setFolderName(savedFolderName || '');
+        setRecursive(savedRecursive !== undefined ? savedRecursive : true);
+        setCreateSubfolders(savedCreateSubfolders || false);
+      } catch (error) {
+        console.error('Failed to load saved form data:', error);
+      }
+    }
+  }, []);
+
+  // Save form data to localStorage whenever form state changes
+  useEffect(() => {
+    const formData = {
+      url,
+      folderName,
+      recursive,
+      createSubfolders,
+      lastUpdated: Date.now()
+    };
+    localStorage.setItem(FORM_DATA_KEY, JSON.stringify(formData));
+  }, [url, folderName, recursive, createSubfolders]);
 
   const handleDownload = () => {
     startDownload(url, folderName, recursive, createSubfolders);
@@ -34,6 +65,17 @@ const Index = () => {
           </div>
           <div className="flex-1 text-center text-sm font-medium text-white/90">
             Download Manager
+          </div>
+          <div className="flex space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearAllData}
+              className="h-7 bg-red-500/20 border-red-400/30 hover:bg-red-500/30 text-red-300 text-xs"
+            >
+              <Trash2 className="h-3 w-3 mr-1" />
+              Clear All
+            </Button>
           </div>
         </div>
 
