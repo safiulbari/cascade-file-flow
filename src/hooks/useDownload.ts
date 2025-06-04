@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import io from 'socket.io-client';
 
@@ -30,22 +30,77 @@ export const useDownload = () => {
   const [summary, setSummary] = useState<DownloadSummary | null>(null);
   const [socket, setSocket] = useState<any>(null);
   const { toast } = useToast();
+  const speedUpdateRef = useRef<number>(0);
+
+  // Load persisted state from localStorage
+  useEffect(() => {
+    const savedState = localStorage.getItem('downloadState');
+    if (savedState) {
+      try {
+        const parsed = JSON.parse(savedState);
+        setIsDownloading(parsed.isDownloading || false);
+        setIsPaused(parsed.isPaused || false);
+        setDownloads(parsed.downloads || []);
+        setSummary(parsed.summary || null);
+      } catch (error) {
+        console.error('Failed to load saved download state:', error);
+      }
+    }
+  }, []);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    const state = {
+      isDownloading,
+      isPaused,
+      downloads,
+      summary
+    };
+    localStorage.setItem('downloadState', JSON.stringify(state));
+  }, [isDownloading, isPaused, downloads, summary]);
 
   useEffect(() => {
-    // Initialize Socket.IO connection
-    const socketConnection = io('http://localhost:3001');
+    // Initialize persistent Socket.IO connection
+    const socketConnection = io('http://localhost:3001', {
+      forceNew: false,
+      reconnection: true,
+      timeout: 20000,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000
+    });
+    
     setSocket(socketConnection);
 
     socketConnection.on('connect', () => {
-      console.log('Connected to server');
+      console.log('Connected to server with ID:', socketConnection.id);
+    });
+
+    socketConnection.on('disconnect', (reason) => {
+      console.log('Disconnected from server:', reason);
+      if (reason === 'io server disconnect') {
+        // Server disconnected the client, try to reconnect
+        socketConnection.connect();
+      }
+    });
+
+    socketConnection.on('reconnect', () => {
+      console.log('Reconnected to server');
+      toast({
+        title: "Connection Restored",
+        description: "Reconnected to download server",
+      });
     });
 
     socketConnection.on('fileQueued', (data: { filename: string; id: string }) => {
-      setDownloads(prev => [...prev, {
-        id: data.id,
-        filename: data.filename,
-        status: 'queued'
-      }]);
+      setDownloads(prev => {
+        const exists = prev.find(item => item.id === data.id);
+        if (exists) return prev;
+        return [...prev, {
+          id: data.id,
+          filename: data.filename,
+          status: 'queued'
+        }];
+      });
     });
 
     socketConnection.on('fileDownloading', (data: { id: string; progress?: number }) => {
@@ -98,20 +153,32 @@ export const useDownload = () => {
     });
 
     return () => {
-      socketConnection.disconnect();
+      // Don't disconnect on cleanup to maintain persistence
+      // socketConnection.disconnect();
     };
   }, [toast]);
 
-  // Real-time progress simulation for better UX
+  // Slower progress simulation for better UX (updates every 5 seconds)
   useEffect(() => {
     if (!isDownloading || isPaused) return;
 
     const interval = setInterval(() => {
+      speedUpdateRef.current++;
+      
       setDownloads(prev => prev.map(download => {
         if (download.status === 'downloading' && download.progress !== undefined && download.progress < 100) {
-          const increment = Math.random() * 5 + 1; // 1-6% progress increment
+          const increment = Math.random() * 3 + 1; // 1-4% progress increment
           const newProgress = Math.min(download.progress + increment, 100);
-          return { ...download, progress: newProgress };
+          
+          // Update speed every 5 seconds (5 interval cycles)
+          const shouldUpdateSpeed = speedUpdateRef.current % 5 === 0;
+          const speed = shouldUpdateSpeed ? `${(Math.random() * 15 + 2).toFixed(1)} MB/s` : download.speed;
+          
+          return { 
+            ...download, 
+            progress: newProgress,
+            speed: speed || `${(Math.random() * 15 + 2).toFixed(1)} MB/s`
+          };
         }
         return download;
       }));
@@ -143,6 +210,7 @@ export const useDownload = () => {
     setIsPaused(false);
     setDownloads([]);
     setSummary(null);
+    speedUpdateRef.current = 0;
 
     try {
       const response = await fetch('http://localhost:3001/api/download', {

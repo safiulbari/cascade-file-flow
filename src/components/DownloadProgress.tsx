@@ -75,31 +75,31 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({ downloads }) => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Overall Progress Summary */}
-      <Card className="bg-gradient-to-br from-white to-indigo-50 border-indigo-200 shadow-lg">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-indigo-900 flex items-center space-x-2 text-lg">
-            <DownloadIcon className="h-5 w-5 text-indigo-600" />
-            <span>Download Progress</span>
+    <div className="space-y-4">
+      {/* Compact Progress Summary */}
+      <Card className="bg-gradient-to-br from-white to-blue-50 border-blue-200 shadow-md">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-blue-900 flex items-center space-x-2 text-base">
+            <DownloadIcon className="h-4 w-4 text-blue-600" />
+            <span>Progress Overview</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="text-center p-3 bg-blue-50 rounded-xl border border-blue-200">
-              <div className="text-xl font-bold text-blue-700">{downloads.length}</div>
+          <div className="grid grid-cols-4 gap-2">
+            <div className="text-center p-2 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="text-lg font-bold text-blue-700">{downloads.length}</div>
               <div className="text-xs text-blue-600 font-medium">Total</div>
             </div>
-            <div className="text-center p-3 bg-emerald-50 rounded-xl border border-emerald-200">
-              <div className="text-xl font-bold text-emerald-700">{completedCount}</div>
-              <div className="text-xs text-emerald-600 font-medium">Completed</div>
+            <div className="text-center p-2 bg-emerald-50 rounded-lg border border-emerald-200">
+              <div className="text-lg font-bold text-emerald-700">{completedCount}</div>
+              <div className="text-xs text-emerald-600 font-medium">Done</div>
             </div>
-            <div className="text-center p-3 bg-amber-50 rounded-xl border border-amber-200">
-              <div className="text-xl font-bold text-amber-700">{queuedCount}</div>
-              <div className="text-xs text-amber-600 font-medium">Queued</div>
+            <div className="text-center p-2 bg-amber-50 rounded-lg border border-amber-200">
+              <div className="text-lg font-bold text-amber-700">{queuedCount}</div>
+              <div className="text-xs text-amber-600 font-medium">Queue</div>
             </div>
-            <div className="text-center p-3 bg-red-50 rounded-xl border border-red-200">
-              <div className="text-xl font-bold text-red-700">{failedCount}</div>
+            <div className="text-center p-2 bg-red-50 rounded-lg border border-red-200">
+              <div className="text-lg font-bold text-red-700">{failedCount}</div>
               <div className="text-xs text-red-600 font-medium">Failed</div>
             </div>
           </div>
@@ -108,20 +108,20 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({ downloads }) => {
 
       {/* Current Download Highlight */}
       {activeDownload && (
-        <Card className={`shadow-lg border-2 ${
+        <Card className={`shadow-md border-2 ${
           activeDownload.status === 'paused' 
             ? 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-300' 
             : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-300'
         }`}>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
                 {getStatusIcon(activeDownload.status)}
                 <div>
-                  <h3 className="font-semibold text-gray-900 truncate max-w-md">
+                  <h3 className="font-semibold text-gray-900 truncate max-w-md text-sm">
                     {activeDownload.filename}
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-xs text-gray-600">
                     {activeDownload.status === 'paused' ? 'Download Paused' : getRealTimeData(activeDownload).speed}
                   </p>
                 </div>
@@ -130,9 +130,9 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({ downloads }) => {
             </div>
             
             <div className="space-y-2">
-              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                 <div 
-                  className={`h-3 rounded-full transition-all duration-500 ease-out ${
+                  className={`h-2 rounded-full transition-all duration-500 ease-out ${
                     activeDownload.status === 'paused' 
                       ? 'bg-gradient-to-r from-amber-500 to-orange-500' 
                       : 'bg-gradient-to-r from-blue-500 to-indigo-600'
@@ -141,12 +141,12 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({ downloads }) => {
                 />
               </div>
               
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-xs">
                 <span className="font-medium text-gray-700">{activeDownload.progress || 0}%</span>
                 <span className="text-gray-600">
                   {activeDownload.status === 'paused' 
-                    ? 'Paused - Click Resume to continue' 
-                    : `${getRealTimeData(activeDownload).remainingTime} remaining`
+                    ? 'Paused' 
+                    : `${getRealTimeData(activeDownload).remainingTime} left`
                   }
                 </span>
               </div>
@@ -155,50 +155,48 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({ downloads }) => {
         </Card>
       )}
 
-      {/* Downloads List */}
-      <Card className="bg-white border border-gray-200 shadow-lg">
-        <CardHeader className="pb-4 border-b border-gray-100">
-          <CardTitle className="text-gray-900 text-lg">All Downloads</CardTitle>
+      {/* Compact Downloads List */}
+      <Card className="bg-white border border-gray-200 shadow-md">
+        <CardHeader className="pb-2 border-b border-gray-100">
+          <CardTitle className="text-gray-900 text-base">Downloads ({downloads.length})</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="max-h-96 overflow-y-auto">
+          <div className="max-h-64 overflow-y-auto">
             {downloads.map((download, index) => {
               const realTimeData = getRealTimeData(download);
               return (
                 <div 
                   key={download.id} 
-                  className={`p-4 border-b border-gray-100 hover:bg-gray-50/50 transition-colors ${
+                  className={`p-3 border-b border-gray-100 hover:bg-gray-50/50 transition-colors ${
                     index === downloads.length - 1 ? 'border-b-0' : ''
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                    <div className="flex items-center space-x-2 flex-1 min-w-0">
                       {getStatusIcon(download.status)}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate" title={download.filename}>
                           {download.filename}
                         </p>
-                        <div className="flex items-center space-x-4 mt-1">
+                        <div className="flex items-center space-x-3 mt-1">
                           {(download.status === 'downloading' || download.status === 'paused') && download.progress !== undefined && (
-                            <div className="flex items-center space-x-2">
-                              <div className="w-20 bg-gray-200 rounded-full h-1.5">
+                            <div className="flex items-center space-x-1">
+                              <div className="w-16 bg-gray-200 rounded-full h-1">
                                 <div 
-                                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                                    download.status === 'completed' ? 'bg-emerald-500' :
+                                  className={`h-1 rounded-full transition-all duration-300 ${
                                     download.status === 'downloading' ? 'bg-blue-500' :
                                     download.status === 'paused' ? 'bg-amber-500' :
-                                    download.status === 'failed' ? 'bg-red-500' :
                                     'bg-gray-300'
                                   }`}
-                                  style={{ width: `${download.status === 'completed' ? 100 : download.progress || 0}%` }}
+                                  style={{ width: `${download.progress || 0}%` }}
                                 />
                               </div>
                               <span className="text-xs text-gray-500 w-8 text-right">
-                                {download.status === 'completed' ? '100%' : `${download.progress || 0}%`}
+                                {download.progress || 0}%
                               </span>
                             </div>
                           )}
-                          <div className="flex items-center space-x-3 text-xs text-gray-500">
+                          <div className="flex items-center space-x-2 text-xs text-gray-500">
                             {download.size && <span>{download.size}</span>}
                             {download.status === 'downloading' && (
                               <span className="font-mono text-blue-600">{realTimeData.speed}</span>
@@ -210,13 +208,19 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({ downloads }) => {
                         )}
                       </div>
                     </div>
-                    <div className="ml-4">
+                    <div className="ml-2">
                       {getStatusBadge(download.status)}
                     </div>
                   </div>
                 </div>
               );
             })}
+            {downloads.length === 0 && (
+              <div className="p-6 text-center text-gray-500">
+                <DownloadIcon className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                <p className="text-sm">No downloads yet</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
