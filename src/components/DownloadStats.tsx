@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 interface DownloadStatus {
   id: string;
   filename: string;
-  status: 'queued' | 'downloading' | 'completed' | 'failed';
+  status: 'queued' | 'downloading' | 'completed' | 'failed' | 'paused';
   progress?: number;
   size?: string;
   error?: string;

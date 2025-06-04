@@ -2,12 +2,12 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, AlertCircle, Clock, Loader2, FileText } from 'lucide-react';
+import { CheckCircle, AlertCircle, Clock, Loader2, FileText, Pause } from 'lucide-react';
 
 interface DownloadStatus {
   id: string;
   filename: string;
-  status: 'queued' | 'downloading' | 'completed' | 'failed';
+  status: 'queued' | 'downloading' | 'completed' | 'failed' | 'paused';
   progress?: number;
   size?: string;
   error?: string;
@@ -28,6 +28,8 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ download }) => {
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'failed':
         return <AlertCircle className="h-4 w-4 text-red-500" />;
+      case 'paused':
+        return <Pause className="h-4 w-4 text-orange-500" />;
       default:
         return <FileText className="h-4 w-4" />;
     }
@@ -38,7 +40,8 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ download }) => {
       queued: 'secondary',
       downloading: 'default',
       completed: 'default',
-      failed: 'destructive'
+      failed: 'destructive',
+      paused: 'secondary'
     } as const;
 
     return (
@@ -60,7 +63,7 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ download }) => {
         {getStatusBadge(download.status)}
       </div>
       
-      {download.status === 'downloading' && download.progress !== undefined && (
+      {(download.status === 'downloading' || download.status === 'paused') && download.progress !== undefined && (
         <Progress value={download.progress} className="h-2" />
       )}
       
