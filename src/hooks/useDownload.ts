@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import io from 'socket.io-client';
@@ -5,7 +6,7 @@ import io from 'socket.io-client';
 interface DownloadStatus {
   id: string;
   filename: string;
-  status: 'queued' | 'downloading' | 'completed' | 'failed';
+  status: 'queued' | 'downloading' | 'completed' | 'failed' | 'paused';
   progress?: number;
   size?: string;
   error?: string;
@@ -24,6 +25,7 @@ interface DownloadSummary {
 
 export const useDownload = () => {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [downloads, setDownloads] = useState<DownloadStatus[]>([]);
   const [summary, setSummary] = useState<DownloadSummary | null>(null);
   const [socket, setSocket] = useState<any>(null);
@@ -78,6 +80,7 @@ export const useDownload = () => {
     socketConnection.on('downloadComplete', (data: DownloadSummary) => {
       setSummary(data);
       setIsDownloading(false);
+      setIsPaused(false);
       toast({
         title: "Download Complete!",
         description: `Downloaded ${data.completedFiles}/${data.totalFiles} files (${data.totalSize})`,
@@ -86,6 +89,7 @@ export const useDownload = () => {
 
     socketConnection.on('downloadError', (data: { error: string }) => {
       setIsDownloading(false);
+      setIsPaused(false);
       toast({
         title: "Download Failed",
         description: data.error,
@@ -100,7 +104,7 @@ export const useDownload = () => {
 
   // Real-time progress simulation for better UX
   useEffect(() => {
-    if (!isDownloading) return;
+    if (!isDownloading || isPaused) return;
 
     const interval = setInterval(() => {
       setDownloads(prev => prev.map(download => {
@@ -114,7 +118,7 @@ export const useDownload = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isDownloading]);
+  }, [isDownloading, isPaused]);
 
   const startDownload = async (url: string, folderName: string, recursive: boolean, createSubfolders: boolean = false) => {
     if (!url.trim()) {
@@ -136,6 +140,7 @@ export const useDownload = () => {
     }
 
     setIsDownloading(true);
+    setIsPaused(false);
     setDownloads([]);
     setSummary(null);
 
@@ -158,6 +163,7 @@ export const useDownload = () => {
       });
     } catch (error) {
       setIsDownloading(false);
+      setIsPaused(false);
       toast({
         title: "Error",
         description: "Failed to start download process",
@@ -166,10 +172,39 @@ export const useDownload = () => {
     }
   };
 
+  const pauseDownload = () => {
+    setIsPaused(true);
+    setDownloads(prev => prev.map(download => 
+      download.status === 'downloading' 
+        ? { ...download, status: 'paused' }
+        : download
+    ));
+    toast({
+      title: "Download Paused",
+      description: "Download has been paused. You can resume it anytime.",
+    });
+  };
+
+  const resumeDownload = () => {
+    setIsPaused(false);
+    setDownloads(prev => prev.map(download => 
+      download.status === 'paused' 
+        ? { ...download, status: 'downloading' }
+        : download
+    ));
+    toast({
+      title: "Download Resumed",
+      description: "Download has been resumed.",
+    });
+  };
+
   return {
     isDownloading,
+    isPaused,
     downloads,
     summary,
-    startDownload
+    startDownload,
+    pauseDownload,
+    resumeDownload
   };
 };

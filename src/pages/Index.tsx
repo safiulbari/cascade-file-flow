@@ -11,7 +11,7 @@ const Index = () => {
   const [recursive, setRecursive] = useState(true);
   const [createSubfolders, setCreateSubfolders] = useState(false);
   
-  const { isDownloading, downloads, summary, startDownload } = useDownload();
+  const { isDownloading, isPaused, downloads, summary, startDownload, pauseDownload, resumeDownload } = useDownload();
 
   const handleDownload = () => {
     startDownload(url, folderName, recursive, createSubfolders);
@@ -31,7 +31,10 @@ const Index = () => {
           createSubfolders={createSubfolders}
           setCreateSubfolders={setCreateSubfolders}
           isDownloading={isDownloading}
+          isPaused={isPaused}
           onDownload={handleDownload}
+          onPause={pauseDownload}
+          onResume={resumeDownload}
         />
 
         {/* Progress and Stats */}

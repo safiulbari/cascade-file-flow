@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
-import { Download, Loader2, Clipboard } from 'lucide-react';
+import { Download, Loader2, Pause, Play } from 'lucide-react';
 
 interface DownloadFormProps {
   url: string;
@@ -16,7 +16,10 @@ interface DownloadFormProps {
   createSubfolders: boolean;
   setCreateSubfolders: (createSubfolders: boolean) => void;
   isDownloading: boolean;
+  isPaused?: boolean;
   onDownload: () => void;
+  onPause?: () => void;
+  onResume?: () => void;
 }
 
 const DownloadForm: React.FC<DownloadFormProps> = ({
@@ -29,7 +32,10 @@ const DownloadForm: React.FC<DownloadFormProps> = ({
   createSubfolders,
   setCreateSubfolders,
   isDownloading,
-  onDownload
+  isPaused = false,
+  onDownload,
+  onPause,
+  onResume
 }) => {
   // Load data from localStorage on component mount
   useEffect(() => {
@@ -54,14 +60,7 @@ const DownloadForm: React.FC<DownloadFormProps> = ({
     localStorage.setItem('downloadFormData', JSON.stringify(formData));
   }, [url, folderName, recursive, createSubfolders]);
 
-  const handlePaste = async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      setUrl(text);
-    } catch (err) {
-      console.error('Failed to read clipboard contents: ', err);
-    }
-  };
+  const isFormValid = url.trim() && folderName.trim();
 
   return (
     <Card className="bg-white border border-gray-200 shadow-lg">
@@ -69,25 +68,13 @@ const DownloadForm: React.FC<DownloadFormProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-semibold text-gray-800">URL</label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="http://example.com/folder/"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                className="bg-white border-gray-300 text-gray-900 placeholder-gray-400 flex-1"
-                disabled={isDownloading}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={handlePaste}
-                disabled={isDownloading}
-                className="shrink-0"
-              >
-                <Clipboard className="h-4 w-4" />
-              </Button>
-            </div>
+            <Input
+              placeholder="http://example.com/folder/"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              className="bg-white border-gray-300 text-gray-900 placeholder-gray-400"
+              disabled={isDownloading}
+            />
           </div>
           
           <div className="space-y-2">
@@ -126,24 +113,48 @@ const DownloadForm: React.FC<DownloadFormProps> = ({
           </div>
         </div>
 
-        <Button 
-          onClick={onDownload}
-          disabled={isDownloading || !url.trim() || !folderName.trim()}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-md"
-          size="lg"
-        >
-          {isDownloading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Downloading...
-            </>
-          ) : (
-            <>
+        <div className="flex gap-3">
+          {!isDownloading ? (
+            <Button 
+              onClick={onDownload}
+              disabled={!isFormValid}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all hover:shadow-lg"
+              size="lg"
+            >
               <Download className="mr-2 h-4 w-4" />
               Start Download
+            </Button>
+          ) : (
+            <>
+              {isPaused ? (
+                <Button 
+                  onClick={onResume}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white shadow-md transition-all hover:shadow-lg"
+                  size="lg"
+                >
+                  <Play className="mr-2 h-4 w-4" />
+                  Resume Download
+                </Button>
+              ) : (
+                <Button 
+                  onClick={onPause}
+                  variant="outline"
+                  className="flex-1 border-orange-300 text-orange-700 hover:bg-orange-50 shadow-md transition-all hover:shadow-lg"
+                  size="lg"
+                >
+                  <Pause className="mr-2 h-4 w-4" />
+                  Pause Download
+                </Button>
+              )}
+              <div className="flex items-center px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin text-blue-600" />
+                <span className="text-sm font-medium text-blue-700">
+                  {isPaused ? 'Paused' : 'Downloading...'}
+                </span>
+              </div>
             </>
           )}
-        </Button>
+        </div>
       </CardContent>
     </Card>
   );
