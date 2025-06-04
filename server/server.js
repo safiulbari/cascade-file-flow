@@ -1,3 +1,4 @@
+
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -7,6 +8,7 @@ const cheerio = require('cheerio');
 const fs = require('fs').promises;
 const path = require('path');
 const { createWriteStream } = require('fs');
+const os = require('os');
 
 const app = express();
 const server = http.createServer(app);
@@ -20,7 +22,8 @@ const io = socketIo(server, {
 app.use(cors());
 app.use(express.json());
 
-const DOWNLOADS_DIR = path.join(__dirname, '../downloads');
+// Use system Downloads folder instead of project folder
+const DOWNLOADS_DIR = path.join(os.homedir(), 'Downloads');
 
 // File extensions we want to download
 const VIDEO_EXTENSIONS = ['.mkv', '.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.m4v'];
@@ -34,17 +37,7 @@ function decodeFilename(filename) {
   try {
     return decodeURIComponent(filename);
   } catch (error) {
-    // If decoding fails, return original filename
     return filename;
-  }
-}
-
-// Ensure downloads directory exists
-async function ensureDownloadsDir() {
-  try {
-    await fs.access(DOWNLOADS_DIR);
-  } catch {
-    await fs.mkdir(DOWNLOADS_DIR, { recursive: true });
   }
 }
 
@@ -66,7 +59,7 @@ function isSupportedFile(filename) {
 }
 
 // Extract file links from h5ai-style directory listing
-async function crawlDirectory(url, recursive = true) {
+async function crawlDirectory(url, recursive = true, baseUrl = null) {
   try {
     console.log(`Crawling: ${url}`);
     const response = await axios.get(url, {
@@ -79,6 +72,7 @@ async function crawlDirectory(url, recursive = true) {
     const $ = cheerio.load(response.data);
     const files = [];
     const directories = [];
+    const currentBaseUrl = baseUrl || url;
 
     // Specific selectors for h5ai structure
     $('#items li.item').each((i, element) => {
@@ -91,31 +85,25 @@ async function crawlDirectory(url, recursive = true) {
       if (href && rawFilename) {
         const fullUrl = new URL(href, url).href;
         
-        // Skip if not from same domain
         if (!isSameDomain(url, fullUrl)) {
           console.log(`Skipping external link: ${fullUrl}`);
           return;
         }
         
-        // Decode the filename
         const filename = decodeFilename(rawFilename);
         
-        // Check if it's a folder
         if ($item.hasClass('folder') && !$item.hasClass('folder-parent')) {
           if (recursive) {
             directories.push({ url: fullUrl, name: filename });
           }
         } 
-        // Check if it's a file and a supported file type
         else if ($item.hasClass('file') && isSupportedFile(filename)) {
           files.push({
             url: fullUrl,
             filename: filename,
-            relativePath: getRelativePath(url, fullUrl, true) // true to decode path
+            relativePath: getRelativePath(currentBaseUrl, fullUrl, true)
           });
           console.log(`Found supported file: ${filename}`);
-        } else if ($item.hasClass('file')) {
-          console.log(`Skipping unsupported file: ${filename}`);
         }
       }
     });
@@ -131,7 +119,6 @@ async function crawlDirectory(url, recursive = true) {
         if (href && href !== '../' && !href.startsWith('?') && !href.startsWith('#') && rawText.length > 0) {
           const fullUrl = new URL(href, url).href;
           
-          // Skip if not from same domain
           if (!isSameDomain(url, fullUrl)) {
             return;
           }
@@ -146,7 +133,7 @@ async function crawlDirectory(url, recursive = true) {
             files.push({
               url: fullUrl,
               filename: text,
-              relativePath: getRelativePath(url, fullUrl, true)
+              relativePath: getRelativePath(currentBaseUrl, fullUrl, true)
             });
             console.log(`Found supported file: ${text}`);
           }
@@ -160,7 +147,7 @@ async function crawlDirectory(url, recursive = true) {
     if (recursive) {
       for (const dir of directories) {
         try {
-          const subFiles = await crawlDirectory(dir.url, true);
+          const subFiles = await crawlDirectory(dir.url, true, currentBaseUrl);
           files.push(...subFiles);
         } catch (error) {
           console.error(`Failed to crawl directory ${dir.url}:`, error.message);
@@ -187,15 +174,21 @@ function getRelativePath(baseUrl, fileUrl, decode = false) {
   }
 }
 
-async function downloadFile(file, socket, customFolder) {
+async function downloadFile(file, socket, customFolder, createSubfolders = false) {
   const { url, filename, relativePath } = file;
   const fileId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
   try {
     socket.emit('fileQueued', { id: fileId, filename: relativePath || filename });
 
-    // Create directory structure with custom folder
-    const filePath = path.join(DOWNLOADS_DIR, customFolder, relativePath || filename);
+    // Create directory structure based on createSubfolders option
+    let filePath;
+    if (createSubfolders && relativePath) {
+      filePath = path.join(DOWNLOADS_DIR, customFolder, relativePath);
+    } else {
+      filePath = path.join(DOWNLOADS_DIR, customFolder, filename);
+    }
+    
     const dir = path.dirname(filePath);
     await fs.mkdir(dir, { recursive: true });
 
@@ -213,6 +206,7 @@ async function downloadFile(file, socket, customFolder) {
 
     const totalSize = parseInt(response.headers['content-length'], 10);
     let downloadedSize = 0;
+    const startTime = Date.now();
 
     const writer = createWriteStream(filePath);
 
@@ -220,7 +214,14 @@ async function downloadFile(file, socket, customFolder) {
       downloadedSize += chunk.length;
       if (totalSize) {
         const progress = Math.round((downloadedSize / totalSize) * 100);
-        socket.emit('fileDownloading', { id: fileId, progress });
+        const elapsed = (Date.now() - startTime) / 1000;
+        const speed = downloadedSize / elapsed / (1024 * 1024); // MB/s
+        
+        socket.emit('fileDownloading', { 
+          id: fileId, 
+          progress,
+          speed: `${speed.toFixed(1)} MB/s`
+        });
       }
     });
 
@@ -262,10 +263,20 @@ async function downloadFile(file, socket, customFolder) {
   }
 }
 
-// ... keep existing code (formatBytes, formatDuration functions) the same
+// Store active downloads per socket
+const activeDownloads = new Map();
+
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+  
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+    activeDownloads.delete(socket.id);
+  });
+});
 
 app.post('/api/download', async (req, res) => {
-  const { url, recursive = true, folderName } = req.body;
+  const { url, recursive = true, folderName, createSubfolders = false } = req.body;
 
   if (!url) {
     return res.status(400).json({ error: 'URL is required' });
@@ -277,21 +288,17 @@ app.post('/api/download', async (req, res) => {
 
   res.json({ message: 'Download started' });
 
-  // Get socket connection for this client
-  const socket = io;
-
   try {
-    await ensureDownloadsDir();
-    
     // Crawl directory to get file list
     const files = await crawlDirectory(url, recursive);
     
     if (files.length === 0) {
-      socket.emit('downloadError', { error: 'No supported files (videos/images) found in directory' });
+      io.emit('downloadError', { error: 'No supported files (videos/images) found in directory' });
       return;
     }
 
     console.log(`Found ${files.length} supported files to download`);
+    console.log(`Create subfolders: ${createSubfolders}`);
     
     const startTime = Date.now();
     let completedFiles = 0;
@@ -301,7 +308,7 @@ app.post('/api/download', async (req, res) => {
     // Download files sequentially
     for (const file of files) {
       try {
-        const result = await downloadFile(file, socket, folderName);
+        const result = await downloadFile(file, io, folderName, createSubfolders);
         if (result.success) {
           completedFiles++;
           totalSize += result.size;
@@ -321,12 +328,13 @@ app.post('/api/download', async (req, res) => {
       duration
     };
 
-    socket.emit('downloadComplete', summary);
+    io.emit('downloadComplete', summary);
     console.log('Download complete:', summary);
+    console.log(`Files saved to: ${path.join(DOWNLOADS_DIR, folderName)}`);
 
   } catch (error) {
     console.error('Download process failed:', error);
-    socket.emit('downloadError', { error: error.message });
+    io.emit('downloadError', { error: error.message });
   }
 });
 
