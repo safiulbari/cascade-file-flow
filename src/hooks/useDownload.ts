@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import io from 'socket.io-client';
 
 interface DownloadStatus {
   id: string;
   filename: string;
-  status: 'queued' | 'downloading' | 'completed' | 'failed' | 'paused';
+  status: 'queued' | 'downloading' | 'completed' | 'failed';
   progress?: number;
   size?: string;
   error?: string;
@@ -22,55 +22,12 @@ interface DownloadSummary {
   duration: string;
 }
 
-const STORAGE_KEY = 'download_manager_data';
-const FORM_DATA_KEY = 'download_form_data';
-
 export const useDownload = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloads, setDownloads] = useState<DownloadStatus[]>([]);
   const [summary, setSummary] = useState<DownloadSummary | null>(null);
   const [socket, setSocket] = useState<any>(null);
   const { toast } = useToast();
-
-  // Load data from localStorage on mount
-  useEffect(() => {
-    const savedData = localStorage.getItem(STORAGE_KEY);
-    if (savedData) {
-      try {
-        const { downloads: savedDownloads, summary: savedSummary, isDownloading: savedIsDownloading } = JSON.parse(savedData);
-        setDownloads(savedDownloads || []);
-        setSummary(savedSummary || null);
-        setIsDownloading(savedIsDownloading || false);
-      } catch (error) {
-        console.error('Failed to load saved data:', error);
-      }
-    }
-  }, []);
-
-  // Save data to localStorage whenever state changes
-  useEffect(() => {
-    const dataToSave = {
-      downloads,
-      summary,
-      isDownloading,
-      lastUpdated: Date.now()
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
-  }, [downloads, summary, isDownloading]);
-
-  // Clear all data function
-  const clearAllData = useCallback(() => {
-    setDownloads([]);
-    setSummary(null);
-    setIsDownloading(false);
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(FORM_DATA_KEY);
-    
-    toast({
-      title: "Data Cleared",
-      description: "All download data has been cleared",
-    });
-  }, [toast]);
 
   useEffect(() => {
     // Initialize Socket.IO connection
@@ -141,40 +98,6 @@ export const useDownload = () => {
     };
   }, [toast]);
 
-  const pauseDownload = useCallback((id: string) => {
-    setDownloads(prev => prev.map(item => 
-      item.id === id && item.status === 'downloading'
-        ? { ...item, status: 'paused' }
-        : item
-    ));
-    
-    if (socket) {
-      socket.emit('pauseDownload', { id });
-    }
-    
-    toast({
-      title: "Download Paused",
-      description: "Download has been paused",
-    });
-  }, [socket, toast]);
-
-  const resumeDownload = useCallback((id: string) => {
-    setDownloads(prev => prev.map(item => 
-      item.id === id && item.status === 'paused'
-        ? { ...item, status: 'downloading' }
-        : item
-    ));
-    
-    if (socket) {
-      socket.emit('resumeDownload', { id });
-    }
-    
-    toast({
-      title: "Download Resumed",
-      description: "Download has been resumed",
-    });
-  }, [socket, toast]);
-
   // Real-time progress simulation for better UX
   useEffect(() => {
     if (!isDownloading) return;
@@ -182,7 +105,7 @@ export const useDownload = () => {
     const interval = setInterval(() => {
       setDownloads(prev => prev.map(download => {
         if (download.status === 'downloading' && download.progress !== undefined && download.progress < 100) {
-          const increment = Math.random() * 5 + 1;
+          const increment = Math.random() * 5 + 1; // 1-6% progress increment
           const newProgress = Math.min(download.progress + increment, 100);
           return { ...download, progress: newProgress };
         }
@@ -247,9 +170,6 @@ export const useDownload = () => {
     isDownloading,
     downloads,
     summary,
-    startDownload,
-    pauseDownload,
-    resumeDownload,
-    clearAllData
+    startDownload
   };
 };
