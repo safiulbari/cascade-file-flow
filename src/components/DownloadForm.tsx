@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -31,6 +31,29 @@ const DownloadForm: React.FC<DownloadFormProps> = ({
   isDownloading,
   onDownload
 }) => {
+  // Load data from localStorage on component mount
+  useEffect(() => {
+    const savedData = localStorage.getItem('downloadFormData');
+    if (savedData) {
+      const parsed = JSON.parse(savedData);
+      setUrl(parsed.url || '');
+      setFolderName(parsed.folderName || '');
+      setRecursive(parsed.recursive !== undefined ? parsed.recursive : true);
+      setCreateSubfolders(parsed.createSubfolders !== undefined ? parsed.createSubfolders : false);
+    }
+  }, [setUrl, setFolderName, setRecursive, setCreateSubfolders]);
+
+  // Save data to localStorage whenever form data changes
+  useEffect(() => {
+    const formData = {
+      url,
+      folderName,
+      recursive,
+      createSubfolders
+    };
+    localStorage.setItem('downloadFormData', JSON.stringify(formData));
+  }, [url, folderName, recursive, createSubfolders]);
+
   const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText();
@@ -43,7 +66,7 @@ const DownloadForm: React.FC<DownloadFormProps> = ({
   return (
     <Card className="bg-white border border-gray-200 shadow-lg">
       <CardContent className="p-8 space-y-6">
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-semibold text-gray-800">URL</label>
             <div className="flex gap-2">
@@ -77,28 +100,30 @@ const DownloadForm: React.FC<DownloadFormProps> = ({
               disabled={isDownloading}
             />
           </div>
-        </div>
-        
-        <div className="space-y-4">
-          <div className="flex items-center space-x-3">
-            <Switch
-              checked={recursive}
-              onCheckedChange={setRecursive}
-              disabled={isDownloading}
-            />
-            <label className="text-sm font-medium text-gray-700">Recursive download (include subdirectories)</label>
+
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-gray-800">Recursive</label>
+            <div className="flex items-center space-x-2 h-10">
+              <Switch
+                checked={recursive}
+                onCheckedChange={setRecursive}
+                disabled={isDownloading}
+              />
+              <span className="text-sm text-gray-600">Include subdirectories</span>
+            </div>
           </div>
 
-          {recursive && (
-            <div className="flex items-center space-x-3 ml-6">
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-gray-800">Create Subfolders</label>
+            <div className="flex items-center space-x-2 h-10">
               <Switch
                 checked={createSubfolders}
                 onCheckedChange={setCreateSubfolders}
-                disabled={isDownloading}
+                disabled={isDownloading || !recursive}
               />
-              <label className="text-sm font-medium text-gray-700">Create subdirectory folders</label>
+              <span className="text-sm text-gray-600">Create subdirectory folders</span>
             </div>
-          )}
+          </div>
         </div>
 
         <Button 
